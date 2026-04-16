@@ -1,0 +1,20 @@
+# sbt / scala
+target/
+project/target/
+project/project/
+.bsp/
+.metals/
+.bloop/
+.scala-build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Spark output
+data/
+spark-warehouse/
+metastore_db/
+derby.log
+*.log
