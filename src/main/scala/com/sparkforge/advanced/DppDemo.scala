@@ -24,10 +24,15 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
  */
 object DppDemo {
 
+  // Dedicated staging path so setUp never touches the shared fact_transactions.
+  private def dppFactPath = AppConfig.data.rawPath + "/fact_transactions_dpp"
+
   /** Build a join where `dt` is the partition column on the fact and is
    *  filterable on the dim side via `recent_dt`. */
   def setUp(spark: SparkSession): Unit = {
     import spark.implicits._
+    // Read original, write to a separate DPP-specific path so the shared
+    // fact_transactions is never overwritten mid-read.
     val txns = spark.read.parquet(AppConfig.data.rawPath + "/fact_transactions")
 
     // dim_dt: tiny calendar dim, holds "is_recent" flag
@@ -37,15 +42,14 @@ object DppDemo {
     cal.toDF("dt", "is_recent")
       .write.mode(SaveMode.Overwrite).parquet(AppConfig.data.rawPath + "/dim_dt")
 
-    // Force-write fact again to ensure it's partitioned by dt.
     txns.write.mode(SaveMode.Overwrite)
-      .partitionBy("dt").parquet(AppConfig.data.rawPath + "/fact_transactions")
+      .partitionBy("dt").parquet(dppFactPath)
   }
 
   def runWithDpp(spark: SparkSession): Unit = {
     spark.conf.set("spark.sql.optimizer.dynamicPartitionPruning.enabled", "true")
 
-    val fact = spark.read.parquet(AppConfig.data.rawPath + "/fact_transactions")
+    val fact = spark.read.parquet(dppFactPath)
     val cal  = spark.read.parquet(AppConfig.data.rawPath + "/dim_dt")
 
     val q = fact.join(broadcast(cal.filter(col("is_recent"))), Seq("dt"))
@@ -56,7 +60,7 @@ object DppDemo {
 
   def runWithoutDpp(spark: SparkSession): Unit = {
     spark.conf.set("spark.sql.optimizer.dynamicPartitionPruning.enabled", "false")
-    val fact = spark.read.parquet(AppConfig.data.rawPath + "/fact_transactions")
+    val fact = spark.read.parquet(dppFactPath)
     val cal  = spark.read.parquet(AppConfig.data.rawPath + "/dim_dt")
     val q = fact.join(broadcast(cal.filter(col("is_recent"))), Seq("dt"))
     println("[DPP OFF] expect PartitionFilters: [] — full scan:")

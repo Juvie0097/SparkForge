@@ -13,7 +13,7 @@ project/project/
 .vscode/
 
 # Spark output
-data/
+/data/
 spark-warehouse/
 metastore_db/
 derby.log

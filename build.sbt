@@ -9,10 +9,10 @@ lazy val root = (project in file("."))
     name := "sparkforge",
 
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core"      % sparkVersion % Provided,
-      "org.apache.spark" %% "spark-sql"       % sparkVersion % Provided,
-      "org.apache.spark" %% "spark-hive"      % sparkVersion % Provided,
-      "org.apache.spark" %% "spark-streaming" % sparkVersion % Provided,
+      "org.apache.spark" %% "spark-core"      % sparkVersion,
+      "org.apache.spark" %% "spark-sql"       % sparkVersion,
+      "org.apache.spark" %% "spark-hive"      % sparkVersion,
+      "org.apache.spark" %% "spark-streaming" % sparkVersion,
       "com.typesafe"      % "config"          % "1.4.3",
       "org.scalatest"    %% "scalatest"       % "3.2.18"     % Test
     ),
@@ -25,6 +25,13 @@ lazy val root = (project in file("."))
       "-unchecked",
       "-Xlint:_",
       "-Ywarn-unused"
+    ),
+
+    // Fork for both run and test so JVM flags take effect
+    run / fork := true,
+    run / javaOptions ++= Seq(
+      "-Xmx4g",
+      "-Xms1g"
     ),
 
     // Tests need an in-process Spark; allow reflection

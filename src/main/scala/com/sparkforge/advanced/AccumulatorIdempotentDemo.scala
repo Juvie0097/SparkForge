@@ -24,6 +24,7 @@ import scala.collection.mutable
 object AccumulatorIdempotentDemo {
 
   def naive(spark: SparkSession, ds: Dataset[Long]): Long = {
+    import spark.implicits._
     val acc = spark.sparkContext.longAccumulator("naive-counter")
     // Inside a transformation: subject to over-count under retries.
     ds.map { x =>
